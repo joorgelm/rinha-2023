@@ -1,0 +1,90 @@
+version: '3'
+services:
+
+  rinha-api-1:
+    image: openjdk:17-ea-5-jdk-alpine
+    container_name: rinha-2023-api-1
+    env_file:
+      - .env.docker
+    volumes:
+      - ./target/rinha-2023-0.0.1-SNAPSHOT.jar:/rinha-2023-0.0.1-SNAPSHOT.jar
+    ports:
+      - '9991:9991'
+    expose:
+      - 9991
+    depends_on:
+      - postgresql
+    environment:
+      - POSTGRES_DB_NAME=rinha
+      - POSTGRES_USER=pgadmin
+      - POSTGRES_PASSWORD=pgadmin
+      - DATABASE_PORT=5432
+      - DATABASE_HOST=localhost
+      - SERVER_PORT=9991
+    deploy:
+      resources:
+        limits:
+          cpus: '0.25'
+          memory: '512M'
+    network_mode: host
+    command: java -jar rinha-2023-0.0.1-SNAPSHOT.jar
+
+  rinha-api-2:
+    image: openjdk:17-ea-5-jdk-alpine
+    container_name: rinha-2023-api-2
+    volumes:
+      - ./target/rinha-2023-0.0.1-SNAPSHOT.jar:/rinha-2023-0.0.1-SNAPSHOT.jar
+    ports:
+      - '9992:9992'
+    expose:
+      - 9992
+    depends_on:
+      - postgresql
+    environment:
+      - POSTGRES_DB_NAME=rinha
+      - POSTGRES_USER=pgadmin
+      - POSTGRES_PASSWORD=pgadmin
+      - DATABASE_PORT=5432
+      - DATABASE_HOST=localhost
+      - SERVER_PORT=9992
+    deploy:
+      resources:
+        limits:
+          cpus: '0.25'
+          memory: '512M'
+    network_mode: host
+    command: java -jar rinha-2023-0.0.1-SNAPSHOT.jar
+
+  nginx:
+    image: nginx:latest
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - rinha-api-1
+      - rinha-api-2
+    ports:
+      - "9999:9999"
+    network_mode: host
+    deploy:
+      resources:
+        limits:
+          cpus: '0.25'
+          memory: '512M'
+
+  postgresql:
+    container_name: rinha-database
+    image: postgres:14.8
+    env_file:
+      - .env.docker
+    ports:
+      - "5432:5432"
+    volumes:
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+    network_mode: host
+    deploy:
+      resources:
+        limits:
+          cpus: '0.75'
+          memory: '1536M'
+    expose:
+      - 5432

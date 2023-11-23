@@ -1,0 +1,14 @@
+package br.com.joorgelm.rinha2023.application.repository;
+
+import br.com.joorgelm.rinha2023.domain.entity.Pessoa;
+
+import java.util.List;
+
+public interface PessoaCustomRepository {
+
+    List<Pessoa> findAllByTermo(String termo);
+
+    void customSave(Pessoa pessoa);
+
+    List<Pessoa> findAllByTermoTsQuery(String termo);
+}
