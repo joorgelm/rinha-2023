@@ -1,4 +1,4 @@
-version: '3'
+version: '3.9'
 services:
 
   rinha-api-1:
@@ -21,11 +21,12 @@ services:
       - DATABASE_PORT=5432
       - DATABASE_HOST=localhost
       - SERVER_PORT=9991
+      - OTHER_API_URL=http://localhost:9992
     deploy:
       resources:
         limits:
-          cpus: '0.25'
-          memory: '512M'
+          cpus: '0.41'
+          memory: '1152MB'
     network_mode: host
     command: java -jar rinha-2023-0.0.1-SNAPSHOT.jar
 
@@ -47,11 +48,12 @@ services:
       - DATABASE_PORT=5432
       - DATABASE_HOST=localhost
       - SERVER_PORT=9992
+      - OTHER_API_URL=http://localhost:9991
     deploy:
       resources:
         limits:
-          cpus: '0.25'
-          memory: '512M'
+          cpus: '0.41'
+          memory: '1152MB'
     network_mode: host
     command: java -jar rinha-2023-0.0.1-SNAPSHOT.jar
 
@@ -68,23 +70,30 @@ services:
     deploy:
       resources:
         limits:
-          cpus: '0.25'
-          memory: '512M'
+          cpus: '0.15'
+          memory: '256MB'
 
   postgresql:
     container_name: rinha-database
-    image: postgres:14.8
+    image: postgres:latest
+    hostname: rinha-database
+    command: 'postgres -c max_connections=200 -c shared_buffers=512MB -c wal_buffers=64MB -c synchronous_commit=off -c fsync=off -c full_page_writes=off'
     env_file:
       - .env.docker
     ports:
       - "5432:5432"
     volumes:
       - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+#      - ./postgresql.conf:/var/lib/postgresql/data/postgresql.conf
     network_mode: host
     deploy:
       resources:
         limits:
-          cpus: '0.75'
-          memory: '1536M'
-    expose:
-      - 5432
+          cpus: '0.52'
+          memory: '512MB'
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 10s

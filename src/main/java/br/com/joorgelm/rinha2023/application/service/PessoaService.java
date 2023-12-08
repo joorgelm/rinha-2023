@@ -6,36 +6,53 @@ import jakarta.transaction.Transactional;
 import org.hibernate.ObjectNotFoundException;
 import org.springframework.stereotype.Service;
 
+import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 @Service
 public class PessoaService {
 
     private final PessoaRepository pessoaRepository;
+    private final CacheService cacheService;
 
-    public PessoaService(PessoaRepository pessoaRepository) {
+    public PessoaService(PessoaRepository pessoaRepository, CacheService cacheService) {
         this.pessoaRepository = pessoaRepository;
+        this.cacheService = cacheService;
     }
 
     @Transactional
-    public Pessoa cadastrarPessoa(Pessoa pessoa) {
+    public String cadastrarPessoa(Pessoa pessoa) {
+        UUID pessoaUUID = UUID.randomUUID();
+        pessoa.setId(pessoaUUID);
         pessoa.validarDados();
-        pessoaRepository.customSave(pessoa);
-        return pessoa;
+
+        if (Optional.ofNullable(pessoa.getStack()).isEmpty()) pessoa.setStack(Collections.emptyList());
+
+        cacheService.addPessoa(pessoa);
+
+        // todo: parar de salvar no momento do cadastro e montar um bulkinsert
+        return pessoaUUID.toString();
     }
 
-    public Pessoa buscarPorId(UUID pessoaId) {
-        return pessoaRepository.findById(pessoaId)
+    public Pessoa buscarPorId(UUID pessoaId, boolean sibling) {
+
+        return Optional.of(cacheService.getPessoa(pessoaId, sibling))
                 .orElseThrow(() -> new ObjectNotFoundException(Pessoa.class.getName(), pessoaId));
     }
 
     // apelido, nome, elementos da stack
-    public List<Pessoa> buscaPorTermo(String t) {
-        return pessoaRepository.findAllByTermoTsQuery(t);
+    public List<Pessoa> buscaPorTermo(String t, boolean sibling) {
+        return cacheService.buscaPorTermo(t, sibling);
+//        return pessoaRepository.findAllByTermoTsQuery(t);
     }
 
-    public long contagemPessoas() {
-        return pessoaRepository.count();
+    public long contagemPessoas(boolean sibling) {
+        return cacheService.contagem(sibling);
+    }
+
+    public Boolean buscarPorApelido(String apelido, boolean sibling) {
+        return cacheService.apelidoExists(apelido, sibling);
     }
 }

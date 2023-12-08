@@ -34,15 +34,16 @@ public class PessoaCustomRepositoryImpl implements PessoaCustomRepository {
     }
 
     public List<Pessoa> findAllByTermoTsQuery(String termo) {
+
         Query query = entityManager.createNativeQuery("select * from pessoa p where " +
                 "p.busca @@ to_tsquery( :termo )", Pessoa.class);
 
-        query.setParameter("termo", termo);
+        query.setParameter("termo", termo.replaceAll("(\\s)+", " | "));
 
         return query.getResultList();
     }
 
-    public void customSave(Pessoa pessoa) {
+    public String customSave(Pessoa pessoa) {
 
         Query query = entityManager.createNativeQuery(
                 "insert into pessoa (id, apelido, nome, busca, nascimento, stack) " +
@@ -50,7 +51,8 @@ public class PessoaCustomRepositoryImpl implements PessoaCustomRepository {
         );
         String stack = pessoaStackConverter.convertToDatabaseColumn(pessoa.getStack());
 
-        query.setParameter("id", UUID.randomUUID());
+        UUID pessoaUUID = UUID.randomUUID();
+        query.setParameter("id", pessoaUUID);
         query.setParameter("apelido", pessoa.getApelido());
         query.setParameter("nome", pessoa.getNome());
         query.setParameter("busca", pessoa.getApelido() + ' ' + pessoa.getNome() + ' ' + stack);
@@ -62,5 +64,6 @@ public class PessoaCustomRepositoryImpl implements PessoaCustomRepository {
 //        transaction.begin();
         query.executeUpdate();
 //        transaction.commit();
+        return pessoaUUID.toString();
     }
 }

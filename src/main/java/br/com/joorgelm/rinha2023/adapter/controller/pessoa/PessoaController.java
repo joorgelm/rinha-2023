@@ -26,30 +26,34 @@ public class PessoaController {
         this.pessoaService = pessoaService;
     }
 
-    /*
-    * Para requisições válidas, sua API deverá retornar status code 201 - created junto com o header "Location: /pessoas/[:id]"
-    * onde [:id] é o id – em formato UUID com a versão a seu critério –
-    * da pessoa que acabou de ser criada. O conteúdo do corpo fica a seu critério; retorne o que quiser.
-    * */
-
     @PostMapping("/pessoas")
     public ResponseEntity<Void> cadastrar(@RequestBody Pessoa pessoa) {
-        Pessoa pessoaCadastrada = pessoaService.cadastrarPessoa(pessoa);
-        return ResponseEntity.created(URI.create("/pessoas/" + pessoaCadastrada.getId())).build();
+        String pessoaUUID = pessoaService.cadastrarPessoa(pessoa);
+        return ResponseEntity.created(URI.create("/pessoas/" + pessoaUUID)).build();
     }
 
     @GetMapping("/pessoas/{pessoaId}")
-    public ResponseEntity<Pessoa> buscaPorId(@PathVariable("pessoaId") UUID pessoaId) {
-        return new ResponseEntity<>(pessoaService.buscarPorId(pessoaId), HttpStatus.OK);
+    public ResponseEntity<Pessoa> buscaPorId(@PathVariable("pessoaId") UUID pessoaId, @RequestParam(defaultValue = "false") boolean sibling) {
+        return new ResponseEntity<>(pessoaService.buscarPorId(pessoaId, sibling), HttpStatus.OK);
+    }
+
+
+    @GetMapping("/pessoas/apelidos/{apelido}")
+    public ResponseEntity<Void> buscaPorApelido(@PathVariable("apelido") String apelido, @RequestParam(defaultValue = "false") boolean sibling) {
+        if (pessoaService.buscarPorApelido(apelido, sibling)) {
+            return new ResponseEntity<>(HttpStatus.OK);
+        }
+
+        return new ResponseEntity<>(HttpStatus.NOT_FOUND);
     }
 
     @GetMapping("/pessoas")
-    public ResponseEntity<List<Pessoa>> buscaPorTermo(@RequestParam String t) {
-        return new ResponseEntity<>(pessoaService.buscaPorTermo(t), HttpStatus.OK);
+    public ResponseEntity<List<Pessoa>> buscaPorTermo(@RequestParam String t, @RequestParam(defaultValue = "false") boolean sibling) {
+        return new ResponseEntity<>(pessoaService.buscaPorTermo(t, sibling), HttpStatus.OK);
     }
 
     @GetMapping("/contagem-pessoas")
-    public ResponseEntity<Long> contagem() {
-        return new ResponseEntity<>(pessoaService.contagemPessoas(), HttpStatus.OK);
+    public ResponseEntity<Long> contagem(@RequestParam(defaultValue = "false") boolean sibling) {
+        return new ResponseEntity<>(pessoaService.contagemPessoas(sibling), HttpStatus.OK);
     }
 }

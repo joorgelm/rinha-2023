@@ -9,7 +9,9 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.Index;
 import jakarta.persistence.SequenceGenerator;
+import jakarta.persistence.Table;
 import jakarta.validation.ConstraintViolation;
 import jakarta.validation.Validation;
 import jakarta.validation.Validator;
@@ -26,6 +28,7 @@ import java.util.Set;
 import java.util.UUID;
 
 @Entity(name = "Pessoa")
+@Table(indexes = @Index(name = "busca_idx", columnList = "busca"))
 public class Pessoa {
 
     @Id
