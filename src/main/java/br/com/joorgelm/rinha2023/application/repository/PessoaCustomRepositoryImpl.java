@@ -66,4 +66,34 @@ public class PessoaCustomRepositoryImpl implements PessoaCustomRepository {
 //        transaction.commit();
         return pessoaUUID.toString();
     }
+
+    @Override
+    public void customSave(List<Pessoa> pessoas) {
+        var stringBuilder = new StringBuilder();
+        stringBuilder.append("insert into pessoa (id, apelido, nome, busca, nascimento, stack) values ");
+
+        for (int i = 0; i < pessoas.size(); i++) {
+            stringBuilder.append(String.format("(:id%s, :apelido%s, :nome%s, to_tsvector(:busca%s), :nascimento%s, :stack%s)", i, i, i, i, i, i));
+            if (i != pessoas.size() - 1) {
+                stringBuilder.append(", ");
+            }
+        }
+
+        var query = entityManager.createNativeQuery(stringBuilder.toString());
+
+        for (int i = 0; i < pessoas.size(); i++) {
+            var pessoa = pessoas.get(i);
+            String stack = pessoaStackConverter.convertToDatabaseColumn(pessoa.getStack());
+
+            UUID pessoaUUID = UUID.randomUUID();
+            query.setParameter("id" + i, pessoaUUID);
+            query.setParameter("apelido" + i, pessoa.getApelido());
+            query.setParameter("nome" + i, pessoa.getNome());
+            query.setParameter("busca" + i, pessoa.getApelido() + ' ' + pessoa.getNome() + ' ' + stack);
+            query.setParameter("nascimento" + i, pessoa.getNascimento());
+            query.setParameter("stack" + i, stack);
+        }
+
+        query.executeUpdate();
+    }
 }

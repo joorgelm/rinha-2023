@@ -4,28 +4,20 @@ package br.com.joorgelm.rinha2023.domain.entity;
 import br.com.joorgelm.rinha2023.domain.converter.PessoaStackConverter;
 import jakarta.persistence.Column;
 import jakarta.persistence.Convert;
-import jakarta.persistence.ElementCollection;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Index;
-import jakarta.persistence.SequenceGenerator;
 import jakarta.persistence.Table;
-import jakarta.validation.ConstraintViolation;
-import jakarta.validation.Validation;
-import jakarta.validation.Validator;
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Pattern;
-import jakarta.validation.constraints.Size;
+import org.apache.logging.log4j.util.Strings;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.client.HttpClientErrorException;
 
 import java.util.List;
 import java.util.Optional;
-import java.util.Set;
 import java.util.UUID;
+import java.util.regex.Matcher;
 
 @Entity(name = "Pessoa")
 @Table(indexes = @Index(name = "busca_idx", columnList = "busca"))
@@ -35,18 +27,12 @@ public class Pessoa {
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
 
-    @NotBlank
-    @Pattern(regexp = "^[A-Za-zÀ-ÖØ-öø-ÿ]+(?:[-'` ]?[A-Za-zÀ-ÖØ-öø-ÿ]+)*$")
-    @Size(max = 32)
     @Column(unique = true)
     private String apelido;
 
-    @NotBlank
-    @Pattern(regexp = "^[A-Za-zÀ-ÖØ-öø-ÿ]+(?:[-'` ]?[A-Za-zÀ-ÖØ-öø-ÿ]+)*$")
-    @Size(max = 32)
     private String nome;
 
-    @NotBlank
+
     private String nascimento;
 
     @Convert(converter = PessoaStackConverter.class)
@@ -110,11 +96,24 @@ public class Pessoa {
 
         Optional.of(this).orElseThrow(IllegalStateException::new);
 
-        Validator validator = Validation.buildDefaultValidatorFactory().getValidator();
-        Set<ConstraintViolation<Pessoa>> constraintViolations = validator.validate(this);
+        if (Strings.isBlank(this.nascimento)) {
+            throw new HttpClientErrorException(HttpStatus.UNPROCESSABLE_ENTITY);
+        }
 
-        if (constraintViolations.isEmpty()) return;
+        if (Strings.isBlank(this.nome) || this.nome.length() > 32) {
+            throw new HttpClientErrorException(HttpStatus.UNPROCESSABLE_ENTITY);
+        } else {
+            java.util.regex.Pattern pattern = java.util.regex.Pattern.compile("^[A-Za-zÀ-ÖØ-öø-ÿ]+(?:[-'` ]?[A-Za-zÀ-ÖØ-öø-ÿ]+)*$");
+            Matcher matcher = pattern.matcher(this.nome);
+            if (!matcher.find()) throw new HttpClientErrorException(HttpStatus.UNPROCESSABLE_ENTITY);
+        }
 
-        throw new HttpClientErrorException(HttpStatus.UNPROCESSABLE_ENTITY);
+        if (Strings.isBlank(this.apelido) || this.apelido.length() > 32) {
+            throw new HttpClientErrorException(HttpStatus.UNPROCESSABLE_ENTITY);
+        } else {
+            java.util.regex.Pattern pattern = java.util.regex.Pattern.compile("^[A-Za-zÀ-ÖØ-öø-ÿ]+(?:[-'` ]?[A-Za-zÀ-ÖØ-öø-ÿ]+)*$");
+            Matcher matcher = pattern.matcher(this.apelido);
+            if (!matcher.find()) throw new HttpClientErrorException(HttpStatus.UNPROCESSABLE_ENTITY);
+        }
     }
 }

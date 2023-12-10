@@ -10,5 +10,7 @@ public interface PessoaCustomRepository {
 
     String customSave(Pessoa pessoa);
 
+    void customSave(List<Pessoa> pessoa);
+
     List<Pessoa> findAllByTermoTsQuery(String termo);
 }

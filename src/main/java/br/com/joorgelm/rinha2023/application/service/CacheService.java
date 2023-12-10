@@ -1,5 +1,6 @@
 package br.com.joorgelm.rinha2023.application.service;
 
+import br.com.joorgelm.rinha2023.application.repository.PessoaRepository;
 import br.com.joorgelm.rinha2023.domain.entity.Pessoa;
 import org.hibernate.ObjectNotFoundException;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -16,21 +17,19 @@ import java.util.stream.Collectors;
 @Service
 public class CacheService {
 
-
-    //  todo: adicionar comunicacao grpc entre as instancias
-    //  todo: todos os endpoints de consulta devem disparar uma request para a outra instancia caso nao encontre na cache local
-
-
     private final Set<String> apelidos;
 
     private final LinkedHashMap<String, Pessoa> pessoaCache;
 
     private final SentinelaCacheService sentinelaCacheService;
 
-    public CacheService(SentinelaCacheService sentinela) {
+    private final PessoaRepository pessoaRepository;
+
+    public CacheService(SentinelaCacheService sentinela, PessoaRepository repository) {
         sentinelaCacheService = sentinela;
-        apelidos = new HashSet<>(30000);
-        pessoaCache = new LinkedHashMap<>(30000);
+        apelidos = new HashSet<>(500);
+        pessoaCache = new LinkedHashMap<>(500);
+        pessoaRepository = repository;
     }
 
     public boolean apelidoExists(String apelido, boolean sibling) {
@@ -48,6 +47,12 @@ public class CacheService {
 
         apelidos.add(apelido);
         pessoaCache.put(pessoa.getId().toString(), pessoa);
+
+//        if (apelidos.size() > 500) {
+//            pessoaRepository.customSave(pessoaCache.values().stream().toList());
+//            // todo limpar cache
+//            // todo buscar no bd caso nao encontre na cache
+//        }
     }
 
     public synchronized List<Pessoa> buscaPorTermo(String termo, boolean sibling) {
