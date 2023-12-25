@@ -1,17 +1,22 @@
 package br.com.joorgelm.rinha2023.application.service;
 
+import br.com.joorgelm.rinha2023.application.batch.dispatcher.PessoaWriterJobDispatcher;
 import br.com.joorgelm.rinha2023.application.repository.PessoaRepository;
 import br.com.joorgelm.rinha2023.domain.entity.Pessoa;
 import org.hibernate.ObjectNotFoundException;
+import org.springframework.batch.core.JobParametersInvalidException;
+import org.springframework.batch.core.repository.JobExecutionAlreadyRunningException;
+import org.springframework.batch.core.repository.JobInstanceAlreadyCompleteException;
+import org.springframework.batch.core.repository.JobRestartException;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 
 import java.util.HashSet;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 @Service
@@ -19,7 +24,7 @@ public class CacheService {
 
     private final Set<String> apelidos;
 
-    private final LinkedHashMap<String, Pessoa> pessoaCache;
+    private final ConcurrentHashMap<String, Pessoa> pessoaCache;
 
     private final SentinelaCacheService sentinelaCacheService;
 
@@ -28,7 +33,7 @@ public class CacheService {
     public CacheService(SentinelaCacheService sentinela, PessoaRepository repository) {
         sentinelaCacheService = sentinela;
         apelidos = new HashSet<>(500);
-        pessoaCache = new LinkedHashMap<>(500);
+        pessoaCache = new ConcurrentHashMap<>(500);
         pessoaRepository = repository;
     }
 
@@ -94,5 +99,20 @@ public class CacheService {
         if (sibling) return pessoaCache.size();
 
         return pessoaCache.size() + sentinelaCacheService.contagem();
+    }
+
+    public Pessoa removeLast() {
+        return pessoaCache.remove(pessoaCache.keySet().stream().toList().get(pessoaCache.size() - 1));
+    }
+
+    public List<Pessoa> getPessoasToSave() {
+        List<Pessoa> list = pessoaCache.values().stream().toList();
+        invalidateCache();
+        return list;
+    }
+
+    private void invalidateCache() {
+        pessoaCache.clear();
+        apelidos.clear();
     }
 }

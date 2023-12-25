@@ -1,9 +1,14 @@
 package br.com.joorgelm.rinha2023.application.service;
 
+import br.com.joorgelm.rinha2023.application.batch.dispatcher.PessoaWriterJobDispatcher;
 import br.com.joorgelm.rinha2023.application.repository.PessoaRepository;
 import br.com.joorgelm.rinha2023.domain.entity.Pessoa;
 import jakarta.transaction.Transactional;
 import org.hibernate.ObjectNotFoundException;
+import org.springframework.batch.core.JobParametersInvalidException;
+import org.springframework.batch.core.repository.JobExecutionAlreadyRunningException;
+import org.springframework.batch.core.repository.JobInstanceAlreadyCompleteException;
+import org.springframework.batch.core.repository.JobRestartException;
 import org.springframework.stereotype.Service;
 
 import java.util.Collections;
@@ -17,9 +22,12 @@ public class PessoaService {
     private final PessoaRepository pessoaRepository;
     private final CacheService cacheService;
 
-    public PessoaService(PessoaRepository pessoaRepository, CacheService cacheService) {
+    private final PessoaWriterJobDispatcher pessoaWriterJobDispatcher;
+
+    public PessoaService(PessoaRepository pessoaRepository, CacheService cacheService, PessoaWriterJobDispatcher pessoaWriterJobDispatcher) {
         this.pessoaRepository = pessoaRepository;
         this.cacheService = cacheService;
+        this.pessoaWriterJobDispatcher = pessoaWriterJobDispatcher;
     }
 
     @Transactional
@@ -31,6 +39,21 @@ public class PessoaService {
         if (Optional.ofNullable(pessoa.getStack()).isEmpty()) pessoa.setStack(Collections.emptyList());
 
         cacheService.addPessoa(pessoa);
+
+        if (cacheService.contagem(false) > 20) {
+
+            try {
+                pessoaWriterJobDispatcher.run();
+            } catch (JobInstanceAlreadyCompleteException e) {
+                throw new RuntimeException(e);
+            } catch (JobExecutionAlreadyRunningException e) {
+                throw new RuntimeException(e);
+            } catch (JobParametersInvalidException e) {
+                throw new RuntimeException(e);
+            } catch (JobRestartException e) {
+                throw new RuntimeException(e);
+            }
+        }
 
         // todo: parar de salvar no momento do cadastro e montar um bulkinsert
         return pessoaUUID.toString();
