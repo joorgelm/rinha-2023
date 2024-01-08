@@ -13,4 +13,5 @@ public interface PessoaCustomRepository {
     void customSave(List<Pessoa> pessoa);
 
     List<Pessoa> findAllByTermoTsQuery(String termo);
+
 }

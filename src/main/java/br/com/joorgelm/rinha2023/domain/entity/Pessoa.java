@@ -32,7 +32,6 @@ public class Pessoa {
 
     private String nome;
 
-
     private String nascimento;
 
     @Convert(converter = PessoaStackConverter.class)
