@@ -14,6 +14,7 @@ import org.apache.logging.log4j.util.Strings;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.client.HttpClientErrorException;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -94,6 +95,14 @@ public class Pessoa {
     public void validarDados() {
 
         Optional.of(this).orElseThrow(IllegalStateException::new);
+
+        if (Optional.ofNullable(this.stack).isEmpty()) {
+            this.setStack(Collections.emptyList());
+        }
+
+        if (this.stack.stream().anyMatch(PessoaStackConverter::isNumeric)) {
+            throw new HttpClientErrorException(HttpStatus.UNPROCESSABLE_ENTITY);
+        }
 
         if (Strings.isBlank(this.nascimento)) {
             throw new HttpClientErrorException(HttpStatus.UNPROCESSABLE_ENTITY);

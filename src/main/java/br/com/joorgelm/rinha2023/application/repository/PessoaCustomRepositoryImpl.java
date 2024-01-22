@@ -64,6 +64,8 @@ public class PessoaCustomRepositoryImpl implements PessoaCustomRepository {
 
     @Override
     public void customSave(List<Pessoa> pessoas) {
+
+        if (pessoas.isEmpty()) return;
         var stringBuilder = new StringBuilder();
         stringBuilder.append("insert into pessoa (id, apelido, nome, busca, nascimento, stack) values ");
 

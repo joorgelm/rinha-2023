@@ -9,7 +9,7 @@ import jakarta.transaction.Transactional;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Service;
 
-@Service
+//@Service
 public class PessoaConsumer {
 
     private final PessoaCustomRepository pessoaCustomRepository;

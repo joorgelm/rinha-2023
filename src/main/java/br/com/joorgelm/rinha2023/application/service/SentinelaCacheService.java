@@ -8,9 +8,11 @@ import org.springframework.stereotype.Service;
 
 import java.io.IOException;
 import java.net.URI;
+import java.net.URLEncoder;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
@@ -27,7 +29,8 @@ public class SentinelaCacheService {
 
     public boolean apelidoExists(String apelido) {
         try {
-            HttpRequest request = BuildGetRequest(instanceUrl + "/pessoas/apelidos/" + apelido + "?sibling=true");
+
+            HttpRequest request = BuildGetRequest(instanceUrl + "/pessoas/apelidos/" + URLEncoder.encode(apelido, StandardCharsets.UTF_8) + "?sibling=true");
 
             HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
 
@@ -47,7 +50,7 @@ public class SentinelaCacheService {
 
     public List<Pessoa> buscaPorTermo(String termo) {
         try {
-            HttpRequest request = BuildGetRequest(instanceUrl + "/pessoas?t=" + termo + "&sibling=true");
+            HttpRequest request = BuildGetRequest(instanceUrl + "/pessoas?t=" + URLEncoder.encode(termo, StandardCharsets.UTF_8) + "&sibling=true");
 
             HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
 
@@ -66,7 +69,8 @@ public class SentinelaCacheService {
 
     public Optional<Pessoa> buscaPorId(String id) {
         try {
-            HttpRequest request = BuildGetRequest(instanceUrl + "/pessoas/" + id + "?sibling=true");
+
+            HttpRequest request = BuildGetRequest(instanceUrl + "/pessoas/" + URLEncoder.encode(id, StandardCharsets.UTF_8) + "?sibling=true");
 
             HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
 

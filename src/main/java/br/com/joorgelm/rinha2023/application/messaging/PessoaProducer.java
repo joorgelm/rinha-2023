@@ -6,7 +6,7 @@ import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 
-@Service
+//@Service
 public class PessoaProducer {
 
     private final KafkaTemplate<String, String> kafkaTemplate;

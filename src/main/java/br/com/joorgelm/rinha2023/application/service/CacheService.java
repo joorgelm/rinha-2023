@@ -1,8 +1,13 @@
 package br.com.joorgelm.rinha2023.application.service;
 
+import br.com.joorgelm.rinha2023.application.repository.PessoaCustomRepository;
+import br.com.joorgelm.rinha2023.application.repository.PessoaCustomRepositoryImpl;
 import br.com.joorgelm.rinha2023.domain.entity.Pessoa;
+import jakarta.persistence.EntityManager;
+import jakarta.transaction.Transactional;
 import org.hibernate.ObjectNotFoundException;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
 import java.util.HashSet;
@@ -10,6 +15,8 @@ import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentLinkedDeque;
+import java.util.stream.Collectors;
 
 @Service
 public class CacheService {
@@ -18,12 +25,19 @@ public class CacheService {
 
     private final ConcurrentHashMap<String, Pessoa> pessoaCache;
 
+    private final ConcurrentLinkedDeque<Pessoa> pessoaDeque;
+
     private final SentinelaCacheService sentinelaCacheService;
 
-    public CacheService(SentinelaCacheService sentinela) {
+    private final PessoaCustomRepository pessoaCustomRepository;
+
+
+    public CacheService(SentinelaCacheService sentinela, EntityManager entityManager) {
         sentinelaCacheService = sentinela;
         apelidos = new HashSet<>(22000);
         pessoaCache = new ConcurrentHashMap<>(22000);
+        pessoaCustomRepository = new PessoaCustomRepositoryImpl(entityManager);
+        pessoaDeque = new ConcurrentLinkedDeque<>();
     }
 
     public boolean apelidoExists(String apelido, boolean sibling) {
@@ -40,6 +54,7 @@ public class CacheService {
 
         apelidos.add(apelido);
         pessoaCache.put(pessoa.getId().toString(), pessoa);
+        pessoaDeque.add(pessoa);
     }
 
     public List<Pessoa> buscaPorTermo(String termo, boolean sibling) {
@@ -81,5 +96,17 @@ public class CacheService {
         if (sibling) return pessoaCache.size();
 
         return pessoaCache.size() + sentinelaCacheService.contagem();
+    }
+
+    @Scheduled(fixedRate = 5000)
+    @Transactional(Transactional.TxType.REQUIRES_NEW)
+    public void scheduledSave() {
+        synchronized (pessoaDeque) {
+            if (pessoaDeque.isEmpty()) return;
+            List<Pessoa> pessoas = pessoaDeque.stream()
+                    .collect(Collectors.toUnmodifiableList());
+            pessoaCustomRepository.customSave(pessoas);
+            pessoaDeque.clear();
+        }
     }
 }

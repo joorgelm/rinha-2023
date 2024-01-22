@@ -34,9 +34,9 @@ public class PessoaStackConverter implements AttributeConverter<List<String>, St
 
         if (Objects.isNull(stringList)) return Strings.EMPTY;
 
-        if (stringList.stream().anyMatch(PessoaStackConverter::isNumeric)) {
-            throw new HttpClientErrorException(HttpStatus.UNPROCESSABLE_ENTITY);
-        }
+//        if (stringList.stream().anyMatch(PessoaStackConverter::isNumeric)) {
+//            throw new HttpClientErrorException(HttpStatus.UNPROCESSABLE_ENTITY);
+//        }
 
         return String.join(SPLIT_CHAR, stringList);
     }
