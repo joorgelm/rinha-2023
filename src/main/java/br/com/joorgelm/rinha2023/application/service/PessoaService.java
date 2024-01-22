@@ -17,9 +17,12 @@ public class PessoaService {
 
     private final PessoaProducer pessoaProducer;
 
-    public PessoaService(CacheService cacheService, PessoaProducer pessoaProducer) {
+    private final SentinelaCacheService sentinelaCacheService;
+
+    public PessoaService(CacheService cacheService, PessoaProducer pessoaProducer, SentinelaCacheService sentinelaCacheService) {
         this.cacheService = cacheService;
         this.pessoaProducer = pessoaProducer;
+        this.sentinelaCacheService = sentinelaCacheService;
     }
 
     public String cadastrarPessoa(Pessoa pessoa) {
@@ -37,11 +40,18 @@ public class PessoaService {
 
     public Pessoa buscarPorId(UUID pessoaId, boolean sibling) {
         return Optional.of(cacheService.getPessoa(pessoaId, sibling))
+                .or(() -> sentinelaCacheService.buscaPorId(pessoaId.toString()))
                 .orElseThrow(() -> new ObjectNotFoundException(Pessoa.class.getName(), pessoaId));
     }
 
     public List<Pessoa> buscaPorTermo(String t, boolean sibling) {
-        return cacheService.buscaPorTermo(t, sibling);
+        List<Pessoa> pessoaList = cacheService.buscaPorTermo(t, sibling);
+
+        if (pessoaList.isEmpty() && !sibling) {
+            return sentinelaCacheService.buscaPorTermo(t);
+        }
+
+        return pessoaList;
     }
 
     public long contagemPessoas(boolean sibling) {
@@ -49,6 +59,7 @@ public class PessoaService {
     }
 
     public Boolean buscarPorApelido(String apelido, boolean sibling) {
-        return cacheService.apelidoExists(apelido, sibling);
+        return cacheService.apelidoExists(apelido, sibling) ||
+                sentinelaCacheService.apelidoExists(apelido);
     }
 }
