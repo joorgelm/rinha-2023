@@ -1,12 +1,9 @@
 package br.com.joorgelm.rinha2023.application.service;
 
-import br.com.joorgelm.rinha2023.application.messaging.PessoaProducer;
 import br.com.joorgelm.rinha2023.domain.entity.Pessoa;
-import com.google.gson.Gson;
 import org.hibernate.ObjectNotFoundException;
 import org.springframework.stereotype.Service;
 
-import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -15,11 +12,8 @@ import java.util.UUID;
 public class PessoaService {
     private final CacheService cacheService;
 
-//    private final PessoaProducer pessoaProducer;
-
     public PessoaService(CacheService cacheService) {
         this.cacheService = cacheService;
-//        this.pessoaProducer = pessoaProducer;
     }
 
     public String cadastrarPessoa(Pessoa pessoa) {
@@ -27,10 +21,7 @@ public class PessoaService {
         pessoa.setId(pessoaUUID);
         pessoa.validarDados();
 
-//        if (Optional.ofNullable(pessoa.getStack()).isEmpty()) pessoa.setStack(Collections.emptyList());
-
         cacheService.addPessoa(pessoa);
-//        pessoaProducer.sendMessage(new Gson().toJson(pessoa));
 
         return pessoaUUID.toString();
     }

@@ -41,9 +41,7 @@ public class CacheService {
     }
 
     public boolean apelidoExists(String apelido, boolean sibling) {
-        if (sibling) return apelidos.contains(apelido);
-
-        return apelidos.contains(apelido) || sentinelaCacheService.apelidoExists(apelido);
+        return pessoaCustomRepository.findByApelido(apelido).isPresent();
     }
 
     public void addPessoa(Pessoa pessoa) {
@@ -98,14 +96,23 @@ public class CacheService {
         return pessoaCache.size() + sentinelaCacheService.contagem();
     }
 
-    @Scheduled(fixedRate = 5000)
+    @Scheduled(fixedRate = 2000)
     @Transactional(Transactional.TxType.REQUIRES_NEW)
     public void scheduledSave() {
         synchronized (pessoaDeque) {
             if (pessoaDeque.isEmpty()) return;
             List<Pessoa> pessoas = pessoaDeque.stream()
                     .collect(Collectors.toUnmodifiableList());
-            pessoaCustomRepository.customSave(pessoas);
+
+            try {
+                pessoaCustomRepository.customSave(pessoas);
+            } catch (Exception e) {
+                for (Pessoa p : pessoas) {
+                    try {
+                        pessoaCustomRepository.customSave(p);
+                    } catch (Exception ignored) {}
+                }
+            }
             pessoaDeque.clear();
         }
     }

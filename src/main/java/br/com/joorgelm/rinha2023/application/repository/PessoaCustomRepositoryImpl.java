@@ -7,6 +7,7 @@ import jakarta.persistence.PersistenceContext;
 import jakarta.persistence.Query;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 public class PessoaCustomRepositoryImpl implements PessoaCustomRepository {
@@ -40,6 +41,17 @@ public class PessoaCustomRepositoryImpl implements PessoaCustomRepository {
         query.setParameter("termo", termo.replaceAll("(\\s)+", " | "));
 
         return query.getResultList();
+    }
+
+    @Override
+    public Optional<Pessoa> findByApelido(String apelido) {
+
+        Query query = entityManager.createNativeQuery("select * from pessoa p where " +
+                "p.apelido = :apelido", Pessoa.class);
+
+        query.setParameter("apelido", apelido);
+
+        return query.getResultList().stream().findFirst();
     }
 
     public String customSave(Pessoa pessoa) {

@@ -92,6 +92,18 @@ public class Pessoa {
         this.nascimento = nascimento;
     }
 
+    private boolean isNumeric(String strNum) {
+        if (strNum == null) {
+            return false;
+        }
+        try {
+            double d = Double.parseDouble(strNum);
+        } catch (NumberFormatException nfe) {
+            return false;
+        }
+        return true;
+    }
+
     public void validarDados() {
 
         Optional.of(this).orElseThrow(IllegalStateException::new);
@@ -100,7 +112,7 @@ public class Pessoa {
             this.setStack(Collections.emptyList());
         }
 
-        if (this.stack.stream().anyMatch(PessoaStackConverter::isNumeric)) {
+        if (this.stack.stream().anyMatch(this::isNumeric)) {
             throw new HttpClientErrorException(HttpStatus.UNPROCESSABLE_ENTITY);
         }
 
