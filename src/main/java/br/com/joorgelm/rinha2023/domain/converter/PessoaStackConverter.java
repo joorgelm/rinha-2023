@@ -18,25 +18,10 @@ public class PessoaStackConverter implements AttributeConverter<List<String>, St
 
     private static final String SPLIT_CHAR = ";";
 
-    public static boolean isNumeric(String strNum) {
-        if (strNum == null) {
-            return false;
-        }
-        try {
-            double d = Double.parseDouble(strNum);
-        } catch (NumberFormatException nfe) {
-            return false;
-        }
-        return true;
-    }
     @Override
     public String convertToDatabaseColumn(List<String> stringList) {
 
         if (Objects.isNull(stringList)) return Strings.EMPTY;
-
-        if (stringList.stream().anyMatch(PessoaStackConverter::isNumeric)) {
-            throw new HttpClientErrorException(HttpStatus.UNPROCESSABLE_ENTITY);
-        }
 
         return String.join(SPLIT_CHAR, stringList);
     }

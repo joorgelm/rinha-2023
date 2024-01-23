@@ -3,11 +3,11 @@ package br.com.joorgelm.rinha2023.application.repository;
 import br.com.joorgelm.rinha2023.domain.converter.PessoaStackConverter;
 import br.com.joorgelm.rinha2023.domain.entity.Pessoa;
 import jakarta.persistence.EntityManager;
-import jakarta.persistence.EntityTransaction;
 import jakarta.persistence.PersistenceContext;
 import jakarta.persistence.Query;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 public class PessoaCustomRepositoryImpl implements PessoaCustomRepository {
@@ -43,6 +43,17 @@ public class PessoaCustomRepositoryImpl implements PessoaCustomRepository {
         return query.getResultList();
     }
 
+    @Override
+    public Optional<Pessoa> findByApelido(String apelido) {
+
+        Query query = entityManager.createNativeQuery("select * from pessoa p where " +
+                "p.apelido = :apelido", Pessoa.class);
+
+        query.setParameter("apelido", apelido);
+
+        return query.getResultList().stream().findFirst();
+    }
+
     public String customSave(Pessoa pessoa) {
 
         Query query = entityManager.createNativeQuery(
@@ -51,24 +62,22 @@ public class PessoaCustomRepositoryImpl implements PessoaCustomRepository {
         );
         String stack = pessoaStackConverter.convertToDatabaseColumn(pessoa.getStack());
 
-        UUID pessoaUUID = UUID.randomUUID();
-        query.setParameter("id", pessoaUUID);
+        query.setParameter("id", pessoa.getId());
         query.setParameter("apelido", pessoa.getApelido());
         query.setParameter("nome", pessoa.getNome());
         query.setParameter("busca", pessoa.getApelido() + ' ' + pessoa.getNome() + ' ' + stack);
         query.setParameter("nascimento", pessoa.getNascimento());
         query.setParameter("stack", stack);
 
-//        EntityTransaction transaction = entityManager.getTransaction();
 
-//        transaction.begin();
         query.executeUpdate();
-//        transaction.commit();
-        return pessoaUUID.toString();
+        return pessoa.getId().toString();
     }
 
     @Override
     public void customSave(List<Pessoa> pessoas) {
+
+        if (pessoas.isEmpty()) return;
         var stringBuilder = new StringBuilder();
         stringBuilder.append("insert into pessoa (id, apelido, nome, busca, nascimento, stack) values ");
 
@@ -85,7 +94,7 @@ public class PessoaCustomRepositoryImpl implements PessoaCustomRepository {
             var pessoa = pessoas.get(i);
             String stack = pessoaStackConverter.convertToDatabaseColumn(pessoa.getStack());
 
-            UUID pessoaUUID = UUID.randomUUID();
+            UUID pessoaUUID = pessoa.getId();
             query.setParameter("id" + i, pessoaUUID);
             query.setParameter("apelido" + i, pessoa.getApelido());
             query.setParameter("nome" + i, pessoa.getNome());

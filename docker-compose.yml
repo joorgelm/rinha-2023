@@ -4,6 +4,7 @@ services:
   rinha-api-1:
     image: openjdk:17-ea-5-jdk-alpine
     container_name: rinha-2023-api-1
+    hostname: rinha-2023-api-1
     env_file:
       - .env.docker
     volumes:
@@ -13,26 +14,32 @@ services:
     expose:
       - 9991
     depends_on:
-      - postgresql
+      postgresql:
+        condition: service_healthy
     environment:
       - POSTGRES_DB_NAME=rinha
       - POSTGRES_USER=pgadmin
       - POSTGRES_PASSWORD=pgadmin
       - DATABASE_PORT=5432
-      - DATABASE_HOST=localhost
+      - DATABASE_HOST=postgresql
       - SERVER_PORT=9991
-      - OTHER_API_URL=http://localhost:9992
+      - OTHER_API_URL=http://rinha-2023-api-2:9992
+      - KAFKA_CONSUMER_GROUP_ID=group-1
+      - KAFKA_PRODUCER_TOPIC_PARTITION=0
+      - KAFKA_BOOTSTRAP_SERVERS=kafka:9092
     deploy:
       resources:
         limits:
           cpus: '0.41'
-          memory: '1152MB'
-    network_mode: host
+          memory: '896MB'
+    networks:
+      - rinha-network
     command: java -jar rinha-2023-0.0.1-SNAPSHOT.jar
 
   rinha-api-2:
     image: openjdk:17-ea-5-jdk-alpine
     container_name: rinha-2023-api-2
+    hostname: rinha-2023-api-2
     volumes:
       - ./target/rinha-2023-0.0.1-SNAPSHOT.jar:/rinha-2023-0.0.1-SNAPSHOT.jar
     ports:
@@ -40,21 +47,26 @@ services:
     expose:
       - 9992
     depends_on:
-      - postgresql
+      postgresql:
+        condition: service_healthy
     environment:
       - POSTGRES_DB_NAME=rinha
       - POSTGRES_USER=pgadmin
       - POSTGRES_PASSWORD=pgadmin
       - DATABASE_PORT=5432
-      - DATABASE_HOST=localhost
+      - DATABASE_HOST=postgresql
       - SERVER_PORT=9992
-      - OTHER_API_URL=http://localhost:9991
+      - OTHER_API_URL=http://rinha-2023-api-1:9991
+      - KAFKA_CONSUMER_GROUP_ID=group-1
+      - KAFKA_PRODUCER_TOPIC_PARTITION=1
+      - KAFKA_BOOTSTRAP_SERVERS=kafka:9092
     deploy:
       resources:
         limits:
           cpus: '0.41'
-          memory: '1152MB'
-    network_mode: host
+          memory: '896MB'
+    networks:
+      - rinha-network
     command: java -jar rinha-2023-0.0.1-SNAPSHOT.jar
 
   nginx:
@@ -66,17 +78,18 @@ services:
       - rinha-api-2
     ports:
       - "9999:9999"
-    network_mode: host
+    networks:
+      - rinha-network
     deploy:
       resources:
         limits:
-          cpus: '0.15'
-          memory: '256MB'
+          cpus: '0.3'
+          memory: '512MB'
 
   postgresql:
     container_name: rinha-database
-    image: postgres:latest
-    hostname: rinha-database
+    image: postgres:14.10
+    hostname: postgresql
     command: 'postgres -c max_connections=200 -c shared_buffers=512MB -c wal_buffers=64MB -c synchronous_commit=off -c fsync=off -c full_page_writes=off'
     env_file:
       - .env.docker
@@ -84,16 +97,18 @@ services:
       - "5432:5432"
     volumes:
       - ./init.sql:/docker-entrypoint-initdb.d/init.sql
-#      - ./postgresql.conf:/var/lib/postgresql/data/postgresql.conf
-    network_mode: host
     deploy:
       resources:
         limits:
-          cpus: '0.52'
-          memory: '512MB'
+          cpus: '0.3'
+          memory: '896MB'
+    networks:
+      - rinha-network
     healthcheck:
       test: ["CMD-SHELL", "pg_isready"]
       interval: 5s
       timeout: 5s
       retries: 20
       start_period: 10s
+networks:
+  rinha-network:

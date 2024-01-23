@@ -1,9 +1,6 @@
 package br.com.joorgelm.rinha2023.application.service;
 
 import br.com.joorgelm.rinha2023.domain.entity.Pessoa;
-import com.fasterxml.jackson.core.JsonFactory;
-import com.fasterxml.jackson.core.JsonParser;
-import com.fasterxml.jackson.core.json.UTF8DataInputJsonParser;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.hibernate.ObjectNotFoundException;
 import org.springframework.http.HttpStatus;
@@ -11,10 +8,11 @@ import org.springframework.stereotype.Service;
 
 import java.io.IOException;
 import java.net.URI;
-import java.net.URISyntaxException;
+import java.net.URLEncoder;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
@@ -31,10 +29,8 @@ public class SentinelaCacheService {
 
     public boolean apelidoExists(String apelido) {
         try {
-            HttpRequest request = HttpRequest.newBuilder()
-                    .uri(URI.create(instanceUrl + "pessoas/apelidos/" + apelido + "?sibling=true"))
-                    .GET()
-                    .build();
+
+            HttpRequest request = BuildGetRequest(instanceUrl + "/pessoas/apelidos/" + URLEncoder.encode(apelido, StandardCharsets.UTF_8) + "?sibling=true");
 
             HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
 
@@ -45,12 +41,16 @@ public class SentinelaCacheService {
         }
     }
 
+    private HttpRequest BuildGetRequest(String instanceUrl) {
+        return HttpRequest.newBuilder()
+                .uri(URI.create(instanceUrl))
+                .GET()
+                .build();
+    }
+
     public List<Pessoa> buscaPorTermo(String termo) {
         try {
-            HttpRequest request = HttpRequest.newBuilder()
-                    .uri(URI.create(instanceUrl + "/pessoas?t=" + termo + "&sibling=true"))
-                    .GET()
-                    .build();
+            HttpRequest request = BuildGetRequest(instanceUrl + "/pessoas?t=" + URLEncoder.encode(termo, StandardCharsets.UTF_8) + "&sibling=true");
 
             HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
 
@@ -67,12 +67,10 @@ public class SentinelaCacheService {
         }
     }
 
-    public Pessoa buscaPorId(String id) {
+    public Optional<Pessoa> buscaPorId(String id) {
         try {
-            HttpRequest request = HttpRequest.newBuilder()
-                    .uri(URI.create(instanceUrl + "/pessoas/" + id + "?sibling=true"))
-                    .GET()
-                    .build();
+
+            HttpRequest request = BuildGetRequest(instanceUrl + "/pessoas/" + URLEncoder.encode(id, StandardCharsets.UTF_8) + "?sibling=true");
 
             HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
 
@@ -85,7 +83,7 @@ public class SentinelaCacheService {
 
                 ObjectMapper objectMapper = new ObjectMapper();
 
-                return objectMapper.readValue(body, Pessoa.class);
+                return Optional.of(objectMapper.readValue(body, Pessoa.class));
             }
 
             throw new ObjectNotFoundException(Pessoa.class.getName(), UUID.fromString(id));
@@ -96,12 +94,9 @@ public class SentinelaCacheService {
     }
 
     public int contagem() {
-        HttpRequest request = null;
+        HttpRequest request;
         try {
-            request = HttpRequest.newBuilder()
-                    .uri(URI.create(instanceUrl + "/contagem-pessoas" + "?sibling=true"))
-                    .GET()
-                    .build();
+            request = BuildGetRequest(instanceUrl + "/contagem-pessoas" + "?sibling=true");
 
             HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
 

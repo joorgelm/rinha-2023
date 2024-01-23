@@ -14,6 +14,7 @@ import org.apache.logging.log4j.util.Strings;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.client.HttpClientErrorException;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -31,7 +32,6 @@ public class Pessoa {
     private String apelido;
 
     private String nome;
-
 
     private String nascimento;
 
@@ -92,9 +92,29 @@ public class Pessoa {
         this.nascimento = nascimento;
     }
 
+    private boolean isNumeric(String strNum) {
+        if (strNum == null) {
+            return false;
+        }
+        try {
+            double d = Double.parseDouble(strNum);
+        } catch (NumberFormatException nfe) {
+            return false;
+        }
+        return true;
+    }
+
     public void validarDados() {
 
         Optional.of(this).orElseThrow(IllegalStateException::new);
+
+        if (Optional.ofNullable(this.stack).isEmpty()) {
+            this.setStack(Collections.emptyList());
+        }
+
+        if (this.stack.stream().anyMatch(this::isNumeric)) {
+            throw new HttpClientErrorException(HttpStatus.UNPROCESSABLE_ENTITY);
+        }
 
         if (Strings.isBlank(this.nascimento)) {
             throw new HttpClientErrorException(HttpStatus.UNPROCESSABLE_ENTITY);
